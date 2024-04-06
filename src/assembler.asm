@@ -17,6 +17,218 @@ GD K /0300; ler byte do arquivo (get data)
 
 ; ------------ SUBROTINA PRINT VARIÁVEIS ------------ 
 
+; ------------ CODIGO BAGUNCADO ------------ 
+@ /0000
+INI GD /0300
+MM DADO
+JZ EOF 
+LD DADO
+STORE K /9200
+LD STORE
+AD DOIS
+MM STORE
+JP INI
+EOF SC SAVE_LABELS; subrotina q passa por todas as labels e armazena suas posicoes
+SC MNEM2OP
+SC PRINT_CODE
+FIM HM /0000
+
+SAVE_LABELS K /0000 ; Subrotina q percorre todo o codigo e guarda todas as labels e suas posicoes
+GET_LABEL K /8200
+JZ RS_LABEL
+SAVE_L_ASC K /9340
+LD POS_L ; posicao de memoria que a label aparece no codigo analisado
+SAVE_L_POS K /9342
+AD DOIS
+MM POS_L
+LD SAVE_L_ASC  
+AD QUA
+MM SAVE_L_ASC
+LD SAVE_L_POS
+AD QUA
+MM SAVE_L_POS
+LD GET_LABEL
+MM NEXT_LABEL
+NEXT_LABEL K /0000 ; vai ate proxima linha pra pegar o valor da proxima label
+SB EOL 
+JZ ACHOU_EOL
+LD NEXT_LABEL
+AD UM
+MM NEXT_LABEL
+JP NEXT_LABEL
+ACHOU_EOL LD NEXT_LABEL
+AD DOIS
+MM GET_LABEL
+JP GET_LABEL 
+RS_LABEL RS SAVE_LABELS
+
+		MNEM2OP K /0000
+		GET_MNEM K /8204 ; 8215
+		JZ RS_MNEM2OP
+		MM MNEM
+LOOP	LD MNEM
+POSM	K /5300
+		JZ ACHOU
+		LD POSM
+		AD DOIS
+		MM POSM
+		LD POSO
+		AD UM
+		MM POSO
+		JP LOOP
+ACHOU   LD POSO
+		ML DOIS
+		AD GET_OP
+		MM PP	
+PP		K /0000
+		SALVA_OPCODE K /9400
+		LD POSM_O
+		MM POSM
+		LD ZERO
+		MM POSO
+		LD SALVA_OPCODE
+		AD DOIS
+		MM SALVA_OPCODE
+		LD GET_MNEM
+		MM NEXT_MNEM
+		NEXT_MNEM K /0000 ; vai ate proxima linha pra pegar o valor do proximo mnem
+		SB EOL 
+		JZ ACHOU_EOL_M
+		LD NEXT_MNEM
+		AD UM
+		MM NEXT_MNEM
+		JP NEXT_MNEM
+		ACHOU_EOL_M LD NEXT_MNEM
+		AD SEIS
+		MM GET_MNEM
+		JP GET_MNEM
+		RS_MNEM2OP RS MNEM2OP
+
+PRINT_CODE K /0000
+LD POS_M
+GET_VAR ; pegar a variavel utilizada
+RS PRINT_CODE 
+
+
+ASC2HEX K /0000 ; CONVERSOR DE HEX PARA ASCII
+LD HEX
+SB NOVE
+JZ MENOR_IGUAL9
+JN MENOR_IGUAL9; if HEX <= 9
+JP MAIOR_9;		 if HEX > 9
+MENOR_IGUAL9 LD HEX
+AD TRINTA
+MM ASC
+JP RS_ASC2HEX
+MAIOR_9 LD HEX
+SB AA
+JZ IGUAL_A
+LD HEX
+SB BB
+JZ IGUAL_B
+LD HEX 
+SB CC
+JZ IGUAL_C
+LD HEX
+SB DD
+JZ IGUAL_D
+LD HEX 
+SB EE
+JZ IGUAL_E
+LD F_ASC
+JP RS_ASC2HEX
+IGUAL_A LD A_ASC
+JP RS_ASC2HEX
+IGUAL_B LD B_ASC
+JP RS_ASC2HEX
+IGUAL_C LD C_ASC
+JP RS_ASC2HEX
+IGUAL_D D_ASC
+JP RS_ASC2HEX
+IGUAL_E E_ASC
+JP RS_ASC2HEX
+RS_ASC2HEX MM ASC
+RS ASC2HEX 
+
+
+
+@ /0500
+DADO K /0000
+POS_L K /0000
+UM K /0001
+DOIS K /0002
+QUA K /0004
+LABEL K /0000
+OITOS K /8000
+NOVES K /9000
+NOVE K /0009
+EOL K /0D0A
+MNEM K /0000
+POSO K /0000
+OPCODE K /0000
+GET_OP K /8320
+MIL K /1000
+POSM_O K /5300
+SEIS K /0006
+ZERO K /0000
+POS_M K /0000
+ASC K /0000
+HEX K /0000
+TRINTA K /0030
+AA K /000A
+BB K /000B
+CC K /000C
+DD K /000D
+EE K /000E
+FF K /000F
+A_ASC K /0041
+B_ASC K /0042
+C_ASC K /0043
+D_ASC K /0044
+E_ASC K /0045
+F_ASC K /0046
+
+;texto do codigo em ascII guardado a partir da posicao 0200
+;lista de tags(em ascII) e suas posicoes, guardados a partir de 0340
+;lista de opcodes guardados (ja convertidos) a partir de 0400 
+
+
+TABELA	@ /0300 ;Tabela OPCODE2MNEM
+		 K /4A50 ; 0 JP 20
+		 K /4A5A ; 1 JZ 22
+		 K /4A4E ; 2 JN 24 
+		 K /4C56 ; 3 LV 26
+		 K /4144 ; 4 AD 28
+		 K /5342 ; 5 SB 2A
+		 K /4D4C ; 6 ML 2C
+		 K /4456 ; 7 DV 2E
+		 K /4C44 ; 8 LD 30
+		 K /4D4D ; 9 MM 32
+		 K /5343 ; A SC 34
+		 K /5253 ; B RS 36
+		 K /484D ; C HM 38 
+		 K /4744 ; D GD 3A
+		 K /5044 ; E PD 3C
+		 K /4F53 ; F OS 3E
+		 @ /0320
+		 ;Tabela MNEM2OPCODE
+		 K /0000 ; JP 40
+		 K /0001 ; JZ 42
+		 K /0002 ; JN 44
+		 K /0003 ; LV 46
+		 K /0004 ; AD 48
+		 K /0005 ; SB 4A
+		 K /0006 ; ML 4C
+		 K /0007 ; DV 4E
+		 K /0008 ; LD 50
+		 K /0009 ; MM 52 
+		 K /000A ; SC 54
+		 K /000B ; RS 56 
+		 K /000C ; HM 58 
+		 K /000D ; GD 5A
+		 K /000E ; PD 5C
+		 K /000F ; OS 5E
+
 ; ------------ SUBROTINA ------------ 
 ; @ /0100
 ; FIM_LINHA JZ EOF 
